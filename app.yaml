@@ -1,0 +1,29 @@
+application: ownyourcheckin
+version: 3
+runtime: python27
+threadsafe: yes
+api_version: 1
+default_expiration: 90d
+
+builtins:
+- remote_api: on
+- appstats: on
+
+libraries:
+- name: lxml
+  version: latest
+- name: ssl
+  version: latest
+
+handlers:
+
+- url: .*
+  script: app.application
+  secure: always
+
+skip_files:
+- ^(.*/)?.*\.py[co]
+- ^(.*/)?.*/RCS/.*
+- ^(.*/)?\..*
+- ^(.*/)?.*\.bak$
+- ^(.*/)?(debian|docs?|examples?|pydocs?|python3|ref|samples?|tests?)/.*
