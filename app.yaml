@@ -3,7 +3,6 @@ version: 3
 runtime: python27
 threadsafe: yes
 api_version: 1
-default_expiration: 90d
 
 builtins:
 - remote_api: on
@@ -17,7 +16,11 @@ libraries:
 
 handlers:
 
-- url: .*
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+
+- url: /user_feed_update
   script: app.application
   secure: always
 

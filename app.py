@@ -30,9 +30,6 @@ FACEBOOK_ACCESS_TOKEN = appengine_config.read('facebook_access_token')
 
 
 class UpdateHandler(util.Handler):
-  def get(self):
-    self.response.write(
-      'See <a href="https://github.com/snarfed/ownyourcheckin">github.com/snarfed/ownyourcheckin</a>.')
 
   def post(self):
     pass
