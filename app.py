@@ -49,17 +49,34 @@ class UpdateHandler(webapp2.RequestHandler):
       self.response.write(self.request.get('hub.challenge') + '\r\n')
 
   def post(self):
-    """Converts an FB checkin to a new WP post."""
+    """Converts an FB checkin to a new WP post.
+
+    Example request body:
+
+    {"object" : "user",
+     "entry" : [{
+       "uid" : "10101456587354063",
+       "time" : 1421128210,
+       "id" : "10101456587354063",
+       "changed_fields" : ["feed"],
+     }]
+    }
+
+    The entry.id field is just an obfuscated form of the user id. So, I have to
+    fetch /user/feed each time and keep track of the posts I've seen. :(
+    ...or just find the first checkin in the last day, and give up if none (the
+    bootstrap case).
+    """
     logging.info('Update request: %s', self.request.body)
     req = json.loads(self.request.body)
 
     if req.get('object') != 'user':
       return
 
-    resp = urllib2.urlopen(
-      'https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
-      WORDPRESS_SITE_DOMAIN,
-      data=json.dumps({}))
+    # resp = urllib2.urlopen(
+    #   'https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
+    #   WORDPRESS_SITE_DOMAIN,
+    #   data=json.dumps({}))
 
 
 application = webapp2.WSGIApplication(
