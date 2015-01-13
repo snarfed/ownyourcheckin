@@ -2,6 +2,11 @@
 
 https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#receiveupdates
 
+Creates and publishes a new WordPress post via the JSON API. Requires Jetpack
+for self-hosted WordPress.
+
+https://developer.wordpress.com/docs/api/1.1/post/sites/%24site/posts/new/
+
 pseudocode:
 optionally check request sha1 signature
 fetch post
@@ -12,29 +17,51 @@ store in datastore
 
 __author__ = ['Ryan Barrett <ownyourcheckin@ryanb.org>']
 
-import datetime
-import itertools
+import logging
 import json
-import urlparse
-
-import appengine_config
-
-# need to import modules with model class definitions, e.g. facebook, for
-# template rendering.
-from activitystreams import facebook
-from activitystreams.oauth_dropins.webutil import util
+import urllib2
 
 from google.appengine.ext import ndb
+import webapp2
 
-FACEBOOK_ACCESS_TOKEN = appengine_config.read('facebook_access_token')
+
+def read(filename):
+  with open(filename) as f:
+    return f.read().strip()
+
+FACEBOOK_APP_ID = read('facebook_app_id')
+FACEBOOK_ACCESS_TOKEN = read('facebook_access_token')
+FACEBOOK_VERIFY_TOKEN = 'fluffernutter'
+
+WORDPRESS_SITE_DOMAIN = 'snarfed.org'
 
 
-class UpdateHandler(util.Handler):
+class UpdateHandler(webapp2.RequestHandler):
+
+  def get(self):
+    """Verifies a request from FB to confirm this endpoint.
+
+    https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#setupget
+    """
+    logging.info('Verification request: %s', self.request.params)
+    if self.request.get('hub.verify_token') == FACEBOOK_VERIFY_TOKEN:
+      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.write(self.request.get('hub.challenge') + '\r\n')
 
   def post(self):
-    pass
+    """Converts an FB checkin to a new WP post."""
+    logging.info('Update request: %s', self.request.body)
+    req = json.loads(self.request.body)
+
+    if req.get('object') != 'user':
+      return
+
+    resp = urllib2.urlopen(
+      'https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
+      WORDPRESS_SITE_DOMAIN,
+      data=json.dumps({}))
 
 
 application = webapp2.WSGIApplication(
   [('/user_feed_update', UpdateHandler),
-   ], debug=appengine_config.DEBUG)
+   ], debug=False)

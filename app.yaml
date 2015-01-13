@@ -19,6 +19,7 @@ handlers:
 - url: /
   static_files: static/index.html
   upload: static/index.html
+  secure: always
 
 - url: /user_feed_update
   script: app.application
