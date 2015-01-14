@@ -31,9 +31,14 @@ app's id and secret in the `wordpress.com_client_id` and
 your app from the _Application_ drop-down, and click _Get App Token_. Copy the
 token into a file called `facebook_app_token` in the repo root dir.
 
-1. Still in the Graph API Explorer, click _Get Access Token_, click _Extended
-Permissions_, check _read\_stream_, and click _Get Access Token_. Copy the token
-into a file called `facebook_access_token` in the repo root dir.
+1. Find a Facebook access token for your own user with the `offline_access` and
+`read_stream` scopes and put it in a file called `facebook_access_token` in the
+repo root dir.
+<br /><br />
+If you have one lying around, for any app, great! I used mine from
+[Bridgy](https://www.brid.gy/). Otherwise, you'll have to generate one, and I
+haven't yet found a good manual/interactive way. (The Graph API Explorer doesn't
+let you ask for `offline_access`. :/)
 
 1. Deploy this app, on [App Engine](http://appengine.google.com/) or wherever.
 

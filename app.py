@@ -5,18 +5,15 @@ https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#receiveupd
 Creates and publishes a new WordPress post via the JSON API. Requires Jetpack
 for self-hosted WordPress.
 
-https://developer.wordpress.com/docs/api/1.1/post/sites/%24site/posts/new/
+test command line:
 
-pseudocode:
-optionally check request sha1 signature
-fetch post
-translate to mf2
-post to WP
-store in datastore
+curl localhost:8080/user_feed_update \
+  -d '{"object":"user","entry":[{"changed_fields":["feed"]}]}'
 """
 
 __author__ = ['Ryan Barrett <ownyourcheckin@ryanb.org>']
 
+import datetime
 import logging
 import json
 import urllib2
@@ -70,13 +67,60 @@ class UpdateHandler(webapp2.RequestHandler):
     logging.info('Update request: %s', self.request.body)
     req = json.loads(self.request.body)
 
-    if req.get('object') != 'user':
+    if (req.get('object') != 'user' or
+        'feed' not in req.get('entry', [{}])[0].get('changed_fields', [])):
       return
 
-    # resp = urllib2.urlopen(
-    #   'https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
-    #   WORDPRESS_SITE_DOMAIN,
-    #   data=json.dumps({}))
+    # load the user's recent posts
+    # TODO: switch to a-u so we can use render_content, etc
+    url = 'https://graph.facebook.com/me/feed?access_token=' + FACEBOOK_ACCESS_TOKEN
+    feed = self.urlopen_json(url)
+
+    # look for a checkin within the last day
+    for post in feed.get('data', []):
+      # both facebook and app engine timestamps default to UTC
+      place = post.get('place')
+      created = post.get('created_time')
+      if (place and created and
+          datetime.datetime.strptime(created, '%Y-%m-%dT%H:%M:%S+0000') >=
+          datetime.datetime.now() - datetime.timedelta(days=1)):
+        logging.info('Found checkin:\n%s', json.dumps(post, indent=2))
+        break
+    else:
+      logging.info('No checkin found within the last day. Aborting.')
+      return
+
+    # TODO: store in datastore
+
+    post_url = 'https://www.facebook.com/%s/posts/%s' % tuple(post['id'].split('_'))
+    args = {'content': """\
+<p>%s</p>
+<blockquote class="h-as-checkin">
+At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
+</blockquote>
+<a class="u-syndication" href="%s"></a>
+""" % (post.get('message'), place['id'], place['name'], post_url)}
+
+    url = ('https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
+           WORDPRESS_SITE_DOMAIN)
+    data = {'content': content,
+            # 'media_urls[]': '',
+           }
+    resp = self.urlopen_json(url, data=urllib.urlencode(data))
+    logging.info('Response:\n', url, json.dumps(resp, indent=2))
+
+
+  def urlopen_json(self, *args, **kwargs):
+    logging.info('Fetching %s with args %s', args, kwargs)
+    try:
+      resp = urllib2.urlopen(*args, **kwargs).read()
+      return json.loads(resp)
+    except urllib2.URLError, e:
+      logging.error(e.reason)
+      raise
+    except ValueError, e:
+      logging.error('Non-JSON response: %s', resp)
+      raise
 
 
 application = webapp2.WSGIApplication(
