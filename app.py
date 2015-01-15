@@ -16,6 +16,8 @@ __author__ = ['Ryan Barrett <ownyourcheckin@ryanb.org>']
 import datetime
 import logging
 import json
+import operator
+import string
 import urllib
 import urllib2
 
@@ -82,12 +84,8 @@ class UpdateHandler(webapp2.RequestHandler):
         'feed' not in req.get('entry', [{}])[0].get('changed_fields', [])):
       return
 
-    # load the user's recent posts
-    # TODO: switch to a-u so we can use render_content, etc
-    url = 'https://graph.facebook.com/me/feed?access_token=' + FACEBOOK_ACCESS_TOKEN
-    feed = self.urlopen_json(url)
-
-    # look for a checkin within the last day
+    # load the user's recent FB posts. look for a checkin within the last day.
+    feed = self.fb_get('me/feed')
     for post in feed.get('data', []):
       # both facebook and app engine timestamps default to UTC
       place = post.get('place')
@@ -113,24 +111,45 @@ class UpdateHandler(webapp2.RequestHandler):
       checkin = Checkin(id=post_url, checkin_json=checkin_json)
       checkin.put()
 
-    # prepare wp.com API call to create new post
-    args = {
-'content': """\
-<p>%s</p>
-<blockquote class="h-as-checkin">
-At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
-</blockquote>
-<a class="u-syndication" href="%s"></a>
-""" % (post.get('message'), place['id'], place['name'], post_url)}
+    # generate WP post body
+    people = ''
+    with_tags = post.get('with_tags', {}).get('data', [])
+    if with_tags:
+      people = ' with ' + ','.join(
+          '<a class="h-card" href="https://www.facebook.com/%(id)s">'
+            '%(name)s</a>' % tag
+          for tag in with_tags)
 
+    image = image_url = ''
+    object_id = post.get('object_id')
+    if post.get('type') == 'photo' and object_id:
+      obj = self.fb_get(object_id)
+      image_url = max(obj.get('images', []),
+                      key=operator.itemgetter('height'))['source']
+      # image = '<a href="%s"><img class="alignnone size-full" src="%s"/></a>' % \
+      #         (image_url, image_url)
+
+    content = string.Template("""\
+$message
+<blockquote class="h-as-checkin">
+At <a class="h-card p-location"
+      href="https://www.facebook.com/$id">$name</a>$people.
+</blockquote>
+<a class="u-syndication" href="$post_url"></a>
+""").substitute(message=post.get('message'), post_url=post_url, people=people, **place)
+
+    # make WP API call to create post
     url = ('https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
            WORDPRESS_SITE_DOMAIN)
             # 'media_urls[]': '',
     headers = {'authorization': 'Bearer ' + WORDPRESS_ACCESS_TOKEN}
-    resp = self.urlopen_json(urllib2.Request(url, headers=headers),
-                             data=urllib.urlencode(args))
+    resp = self.urlopen_json(url, headers=headers, data={
+      'content': content,
+      'media_urls[]': image_url,
+        # uncomment for testing
+      'status': 'private'})
     post_json = json.dumps(resp, indent=2)
-    logging.info('Response:\n', url, post_json)
+    logging.info('Response:\n%s', post_json)
 
     # store success in datastore
     # TODO: make this transactional with the wordpress post via storing and
@@ -139,11 +158,15 @@ At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
     checkin.status = 'complete'
     checkin.put()
 
+  def urlopen_json(self, url, data=None, headers=None):
+    logging.info('Fetching %s with data %s', url, data)
+    if headers:
+      url = urllib2.Request(url, headers=headers)
+    if data:
+      data = urllib.urlencode(data)
 
-  def urlopen_json(self, *args, **kwargs):
-    logging.info('Fetching %s with args %s', args, kwargs)
     try:
-      resp = urllib2.urlopen(*args, timeout=600, **kwargs).read()
+      resp = urllib2.urlopen(url, timeout=600, data=data).read()
       return json.loads(resp)
     except urllib2.URLError, e:
       logging.error(e.reason)
@@ -151,6 +174,10 @@ At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
     except ValueError, e:
       logging.error('Non-JSON response: %s', resp)
       raise
+
+  def fb_get(self, path):
+    return self.urlopen_json('https://graph.facebook.com/%s?access_token=%s' %
+                             (path, FACEBOOK_ACCESS_TOKEN))
 
 
 application = webapp2.WSGIApplication(

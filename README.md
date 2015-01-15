@@ -31,9 +31,9 @@ app's id and secret in the `wordpress.com_client_id` and
 your app from the _Application_ drop-down, and click _Get App Token_. Copy the
 token into a file called `facebook_app_token` in the repo root dir.
 
-1. Find a Facebook access token for your own user with the `offline_access` and
-`read_stream` scopes and put it in a file called `facebook_access_token` in the
-repo root dir.
+1. Get a Facebook access token for your own user with the `offline_access`,
+`read_stream`, and `user_photos` scopes and put it in a file called
+`facebook_access_token` in the repo root dir.
 <br /><br />
 If you have one lying around, for any app, great! I used mine from
 [Bridgy](https://www.brid.gy/). Otherwise, you'll have to generate one, and I
@@ -54,6 +54,3 @@ curl https://graph.facebook.com/v2.2/APP_ID/subscriptions \
 
 ...and you're done! Post a checkin on Facebook, and it should automatically
 create a new post on your WordPress site.
-
-XXX
-
