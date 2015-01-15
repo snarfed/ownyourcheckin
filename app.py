@@ -144,10 +144,10 @@ At <a class="h-card p-location"
             # 'media_urls[]': '',
     headers = {'authorization': 'Bearer ' + WORDPRESS_ACCESS_TOKEN}
     resp = self.urlopen_json(url, headers=headers, data={
+      # uncomment for testing
+      # 'status': 'private',
       'content': content,
-      'media_urls[]': image_url,
-        # uncomment for testing
-      'status': 'private'})
+      'media_urls[]': image_url})
     post_json = json.dumps(resp, indent=2)
     logging.info('Response:\n%s', post_json)
 

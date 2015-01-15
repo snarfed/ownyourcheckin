@@ -3,10 +3,18 @@
 Watches for your Facebook checkins and copies them to your WordPress blog. A
 form of automated [PESOS](http://indiewebcamp.com/PESOS). Similar to and
 inspired by [OwnYourGram](http://ownyourgram.com/).
-
 [More background.](https://snarfed.org/indie-checkin-flow#OwnYourCheckin)
+
+This is _not_ easy for the average user to set up. It would take a lot more work
+to make it a fully usable service like OwnYourGram. You can definitely get it up
+and running for yourself if you're not afraid to dive into technical details,
+though!
+
 Uses Facebook's
-[Real Time Updates](https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#receiveupdates).
+[Real Time Updates](https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#receiveupdates)
+and the [WordPress.com REST API](https://developer.wordpress.com/docs/api/)
+(available to self-hosted blogs
+[via Jetpack](http://jetpack.me/support/json-api/)).
 
 TODO: If the checkin includes a picture, this "attaches" it to the WordPress
 post, which injects the `<img>` tag for it _above_ the post body. Change that so
