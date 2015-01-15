@@ -16,6 +16,7 @@ __author__ = ['Ryan Barrett <ownyourcheckin@ryanb.org>']
 import datetime
 import logging
 import json
+import urllib
 import urllib2
 
 from google.appengine.ext import ndb
@@ -31,6 +32,16 @@ FACEBOOK_ACCESS_TOKEN = read('facebook_access_token')
 FACEBOOK_VERIFY_TOKEN = 'fluffernutter'
 
 WORDPRESS_SITE_DOMAIN = 'snarfed.org'
+WORDPRESS_ACCESS_TOKEN = read('wordpress.com_access_token')
+
+
+class Checkin(ndb.Model):
+  """Key name is Facebook checkin URL."""
+  checkin_json = ndb.TextProperty(required=True)
+  post_json = ndb.TextProperty()
+  status = ndb.StringProperty(choices=('started', 'complete'), default='started')
+  created = ndb.DateTimeProperty(auto_now_add=True)
+  updated = ndb.DateTimeProperty(auto_now=True)
 
 
 class UpdateHandler(webapp2.RequestHandler):
@@ -84,16 +95,27 @@ class UpdateHandler(webapp2.RequestHandler):
       if (place and created and
           datetime.datetime.strptime(created, '%Y-%m-%dT%H:%M:%S+0000') >=
           datetime.datetime.now() - datetime.timedelta(days=1)):
-        logging.info('Found checkin:\n%s', json.dumps(post, indent=2))
+        checkin_json = json.dumps(post, indent=2)
+        logging.info('Found checkin:\n%s', checkin_json)
         break
     else:
       logging.info('No checkin found within the last day. Aborting.')
       return
 
-    # TODO: store in datastore
-
+    # have we already posted this checkin?
     post_url = 'https://www.facebook.com/%s/posts/%s' % tuple(post['id'].split('_'))
-    args = {'content': """\
+    checkin = Checkin.get_by_id(post_url)
+    if checkin and checkin.status == 'complete':
+      logging.info("We've already posted this checkin! Bailing out.")
+      return
+    elif not checkin:
+      logging.info('First time seeing this checkin.')
+      checkin = Checkin(id=post_url, checkin_json=checkin_json)
+      checkin.put()
+
+    # prepare wp.com API call to create new post
+    args = {
+'content': """\
 <p>%s</p>
 <blockquote class="h-as-checkin">
 At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
@@ -103,17 +125,25 @@ At <a class="h-card p-location" href="https://www.facebook.com/%s">%s</a>.
 
     url = ('https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
            WORDPRESS_SITE_DOMAIN)
-    data = {'content': content,
             # 'media_urls[]': '',
-           }
-    resp = self.urlopen_json(url, data=urllib.urlencode(data))
-    logging.info('Response:\n', url, json.dumps(resp, indent=2))
+    headers = {'authorization': 'Bearer ' + WORDPRESS_ACCESS_TOKEN}
+    resp = self.urlopen_json(urllib2.Request(url, headers=headers),
+                             data=urllib.urlencode(args))
+    post_json = json.dumps(resp, indent=2)
+    logging.info('Response:\n', url, post_json)
+
+    # store success in datastore
+    # TODO: make this transactional with the wordpress post via storing and
+    # querying extra metadata in wp.
+    checkin.post_json = post_json
+    checkin.status = 'complete'
+    checkin.put()
 
 
   def urlopen_json(self, *args, **kwargs):
     logging.info('Fetching %s with args %s', args, kwargs)
     try:
-      resp = urllib2.urlopen(*args, **kwargs).read()
+      resp = urllib2.urlopen(*args, timeout=600, **kwargs).read()
       return json.loads(resp)
     except urllib2.URLError, e:
       logging.error(e.reason)

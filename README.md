@@ -40,11 +40,12 @@ If you have one lying around, for any app, great! I used mine from
 haven't yet found a good manual/interactive way. (The Graph API Explorer doesn't
 let you ask for `offline_access`. :/)
 
-1. Deploy this app, on [App Engine](http://appengine.google.com/) or wherever.
+1. Create an [App Engine](http://appengine.google.com/) app, replace
+`ownyourcheckin` in `app.yaml` with your app id, and deploy.
 
 1. [Subscribe to Real Time Updates](https://developers.facebook.com/docs/graph-api/reference/v2.2/app/subscriptions#publish)
 for your own Facebook posts with this command. Fill in APP_ID and ACCESS_TOKEN and
-replace `ownyourcheckin.appspot.com` with the domain where you deployed this app.
+replace `ownyourcheckin` with your App Engine app id.
 
 ```shell
 curl https://graph.facebook.com/v2.2/APP_ID/subscriptions \
