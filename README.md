@@ -1,9 +1,16 @@
-# ownyourcheckin
-http://ownyourgram.com/ for Facebook checkins
+# OwnYourCheckin
+
+Watches for your Facebook checkins and copies them to your WordPress blog. A
+form of automated [PESOS](http://indiewebcamp.com/PESOS). Similar to and
+inspired by [OwnYourGram](http://ownyourgram.com/).
 
 [More background.](https://snarfed.org/indie-checkin-flow#OwnYourCheckin)
 Uses Facebook's
 [Real Time Updates](https://developers.facebook.com/docs/graph-api/real-time-updates/v2.2#receiveupdates).
+
+TODO: If the checkin includes a picture, this "attaches" it to the WordPress
+post, which injects the `<img>` tag for it _above_ the post body. Change that so
+it ends up below the post body.
 
 
 Setup
