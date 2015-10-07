@@ -16,6 +16,9 @@ and the [WordPress.com REST API](https://developer.wordpress.com/docs/api/)
 (available to self-hosted blogs
 [via Jetpack](http://jetpack.me/support/json-api/)).
 
+This project is placed in the public domain. You may also use it under the
+[CC0 license](http://creativecommons.org/publicdomain/zero/1.0/).
+
 TODO: If the checkin includes a picture, this "attaches" it to the WordPress
 post, which injects the `<img>` tag for it _above_ the post body. Change that so
 it ends up below the post body.
