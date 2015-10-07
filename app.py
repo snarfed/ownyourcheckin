@@ -116,7 +116,7 @@ class UpdateHandler(webapp2.RequestHandler):
     with_tags = post.get('with_tags', {}).get('data', [])
     if with_tags:
       people = ' with ' + ','.join(
-          '<a class="h-card" href="https://www.facebook.com/%(id)s">'
+          u'<a class="h-card" href="https://www.facebook.com/%(id)s">'
             '%(name)s</a>' % tag
           for tag in with_tags)
 
@@ -129,14 +129,15 @@ class UpdateHandler(webapp2.RequestHandler):
       # image = '<a href="%s"><img class="alignnone size-full" src="%s"/></a>' % \
       #         (image_url, image_url)
 
-    content = string.Template("""\
+    content = string.Template(u"""\
 $message
 <blockquote class="h-as-checkin">
 At <a class="h-card p-location"
       href="https://www.facebook.com/$id">$name</a>$people.
 </blockquote>
 <a class="u-syndication" href="$post_url"></a>
-""").substitute(message=post.get('message'), post_url=post_url, people=people, **place)
+""").substitute(message=post.get('message'),
+                post_url=post_url, people=people, **place)
 
     # make WP API call to create post
     url = ('https://public-api.wordpress.com/rest/v1.1/sites/%s/posts/new' %
@@ -163,11 +164,11 @@ At <a class="h-card p-location"
     if headers:
       url = urllib2.Request(url, headers=headers)
     if data:
-      data = urllib.urlencode(data)
+      data = urllib.urlencode(data).encode('utf-8')
 
     try:
       resp = urllib2.urlopen(url, timeout=600, data=data).read()
-      return json.loads(resp)
+      return json.loads(resp.decode('utf-8')
     except urllib2.URLError, e:
       logging.error(e.reason)
       raise
