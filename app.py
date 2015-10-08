@@ -168,7 +168,7 @@ At <a class="h-card p-location"
 
     try:
       resp = urllib2.urlopen(url, timeout=600, data=data).read()
-      return json.loads(resp.decode('utf-8')
+      return json.loads(resp.decode('utf-8'))
     except urllib2.URLError, e:
       logging.error(e.reason)
       raise
