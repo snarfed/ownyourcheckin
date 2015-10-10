@@ -136,7 +136,7 @@ At <a class="h-card p-location"
       href="https://www.facebook.com/$id">$name</a>$people.
 </blockquote>
 <a class="u-syndication" href="$post_url"></a>
-""").substitute(message=post.get('message'),
+""").substitute(message=post.get('message', ''),
                 post_url=post_url, people=people, **place)
 
     # make WP API call to create post
