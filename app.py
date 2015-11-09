@@ -115,7 +115,7 @@ class UpdateHandler(webapp2.RequestHandler):
     people = ''
     with_tags = post.get('with_tags', {}).get('data', [])
     if with_tags:
-      people = ' with ' + ','.join(
+      people = ' with ' + ', '.join(
           u'<a class="h-card" href="https://www.facebook.com/%(id)s">'
             '%(name)s</a>' % tag
           for tag in with_tags)
