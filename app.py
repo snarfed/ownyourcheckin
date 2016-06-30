@@ -103,9 +103,14 @@ class UpdateHandler(webapp2.RequestHandler):
     # have we already posted this checkin?
     post_url = 'https://www.facebook.com/%s/posts/%s' % tuple(post['id'].split('_'))
     checkin = Checkin.get_by_id(post_url)
-    if checkin and checkin.status == 'complete':
-      logging.info("We've already posted this checkin! Bailing out.")
-      return
+    if checkin:
+      if checkin.status == 'complete':
+        logging.info("We've already posted this checkin! Bailing out.")
+        return
+      age = datetime.datetime.now() - checkin.updated
+      if age < datetime.timedelta(minutes=10):
+        logging.info('This checkin is only %s old. It may still be processing.' % age)
+        return
     elif not checkin:
       logging.info('First time seeing this checkin.')
       checkin = Checkin(id=post_url, checkin_json=checkin_json)
