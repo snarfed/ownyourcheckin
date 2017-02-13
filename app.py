@@ -169,7 +169,7 @@ At <a class="h-card p-location"
     if headers:
       url = urllib2.Request(url, headers=headers)
     if data:
-      data = urllib.urlencode(data).encode('utf-8')
+      data = urllib.urlencode({k: v.encode('utf-8') for k, v in data.items()})
 
     try:
       resp = urllib2.urlopen(url, timeout=600, data=data).read()
